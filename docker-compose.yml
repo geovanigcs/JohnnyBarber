@@ -1,0 +1,80 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: johnny-barber-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: johnny_barber
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - johnny-barber-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API (NestJS)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: johnny-barber-backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/johnny_barber?schema=public"
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production-use-openssl-rand-base64-32}
+      JWT_EXPIRATION: "7d"
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-http://localhost:3333/auth/google/callback}
+      PORT: 3333
+      NODE_ENV: production
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+    ports:
+      - "3333:3333"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - johnny-barber-network
+    volumes:
+      - ./backend/prisma:/app/prisma
+
+  # Frontend (Next.js)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3333}
+    container_name: johnny-barber-frontend
+    restart: unless-stopped
+    environment:
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-change-me-in-production-use-openssl-rand-base64-32}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3333}
+      DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/johnny_barber?schema=public"
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+      - postgres
+    networks:
+      - johnny-barber-network
+
+networks:
+  johnny-barber-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
