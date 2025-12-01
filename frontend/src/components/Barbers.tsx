@@ -1,7 +1,8 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { motion, useInView } from "framer-motion";
+import { gsap } from "gsap";
 import { Star, MessageSquare } from "lucide-react";
 import Image from "next/image";
 
@@ -81,6 +82,30 @@ const testimonials = [
 export default function Barbers() {
   const sectionRef = useRef<HTMLElement>(null);
   const isInView = useInView(sectionRef, { once: false, amount: 0.2 });
+  const carouselRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const carousel = carouselRef.current;
+    if (!carousel) return;
+
+    const cardWidth = 366;
+    const totalWidth = cardWidth * testimonials.length;
+
+    gsap.to(carousel, {
+      x: `-=${totalWidth}`,
+      duration: 40,
+      ease: "none",
+      repeat: -1,
+      modifiers: {
+        x: (x) => {
+          const xValue = parseFloat(x);
+          return `${xValue % totalWidth}px`;
+        }
+      }
+    });
+  }, []);
+
+  const duplicatedTestimonials = [...testimonials, ...testimonials, ...testimonials];
 
   return (
     <section id="clientes" ref={sectionRef} className="py-20 overflow-hidden">
@@ -102,49 +127,51 @@ export default function Barbers() {
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-          {testimonials.map((testimonial, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 50 }}
-              animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.6, delay: index * 0.1 }}
-              className="bg-dark-card rounded-2xl overflow-hidden shadow-xl shadow-primary/10 hover:shadow-primary/20 transition-all duration-300 hover:scale-105"
-            >
-              <div className="p-6">
-                <div className="flex items-center space-x-4 mb-4">
-                  <div className="relative w-16 h-16 rounded-full overflow-hidden ring-2 ring-primary/50">
-                    <Image
-                      src={testimonial.imageUrl}
-                      alt={testimonial.name}
-                      fill
-                      quality={95}
-                      className="object-cover"
-                      sizes="64px"
-                    />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-display text-white">{testimonial.name}</h3>
-                    <div className="flex items-center space-x-1 mt-1">
-                      {[...Array(5)].map((_, i) => (
-                        <Star key={i} className="text-yellow-400 fill-yellow-400" size={14} />
-                      ))}
+        <div className="relative overflow-hidden">
+          <div 
+            ref={carouselRef}
+            className="flex gap-8"
+          >
+            {duplicatedTestimonials.map((testimonial, index) => (
+              <div
+                key={index}
+                className="flex-shrink-0 w-[350px] bg-dark-card rounded-2xl overflow-hidden shadow-xl shadow-primary/10"
+              >
+                <div className="p-6">
+                  <div className="flex items-center space-x-4 mb-4">
+                    <div className="relative w-16 h-16 rounded-full overflow-hidden ring-2 ring-primary/50">
+                      <Image
+                        src={testimonial.imageUrl}
+                        alt={testimonial.name}
+                        fill
+                        quality={95}
+                        className="object-cover"
+                        sizes="64px"
+                      />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-display text-white">{testimonial.name}</h3>
+                      <div className="flex items-center space-x-1 mt-1">
+                        {[...Array(5)].map((_, i) => (
+                          <Star key={i} className="text-yellow-400 fill-yellow-400" size={14} />
+                        ))}
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="mb-4">
-                  <p className="text-gray-300 text-sm leading-relaxed italic">
-                    "{testimonial.comment}"
-                  </p>
-                </div>
+                  <div className="mb-4">
+                    <p className="text-gray-300 text-sm leading-relaxed italic">
+                      "{testimonial.comment}"
+                    </p>
+                  </div>
 
-                <div className="pt-4 border-t border-gray-700">
-                  <span className="text-primary text-sm font-medium">{testimonial.service}</span>
+                  <div className="pt-4 border-t border-gray-700">
+                    <span className="text-primary text-sm font-medium">{testimonial.service}</span>
+                  </div>
                 </div>
               </div>
-            </motion.div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     </section>
