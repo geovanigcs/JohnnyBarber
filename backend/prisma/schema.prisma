@@ -1,0 +1,102 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  password      String?
+  image         String?
+  emailVerified DateTime?
+  phone         String?
+  googleId      String?   @unique
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  bookings Booking[]
+
+  @@map("users")
+}
+
+model Barbershop {
+  id          String   @id @default(cuid())
+  name        String
+  address     String
+  description String?
+  phones      String[]
+  imageUrl    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  services Service[]
+  barbers  Barber[]
+
+  @@map("barbershops")
+}
+
+model Barber {
+  id           String   @id @default(cuid())
+  name         String
+  imageUrl     String
+  description  String?
+  specialty    String?
+  barbershopId String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  barbershop Barbershop @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
+  bookings   Booking[]
+
+  @@map("barbers")
+}
+
+model Service {
+  id           String   @id @default(cuid())
+  name         String
+  description  String
+  price        Float
+  imageUrl     String
+  duration     Int      @default(60) // em minutos
+  barbershopId String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  barbershop Barbershop @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
+  bookings   Booking[]
+
+  @@map("services")
+}
+
+model Booking {
+  id        String   @id @default(cuid())
+  userId    String
+  serviceId String
+  barberId  String
+  date      DateTime
+  status    BookingStatus @default(CONFIRMED)
+  notes     String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  barber  Barber  @relation(fields: [barberId], references: [id], onDelete: Cascade)
+
+  @@map("bookings")
+}
+
+enum BookingStatus {
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
