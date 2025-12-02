@@ -1,10 +1,6 @@
 backend/
 .git/
-.gitignore
-*.md
 docker-compose*.yml
 Dockerfile*
 Makefile
 *.sh
-package.json
-package-lock.json
