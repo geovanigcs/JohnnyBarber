@@ -1,0 +1,9 @@
+backend
+.git
+.gitignore
+README.md
+docker-compose.yml
+docker-compose.dev.yml
+*.md
+Makefile
+*.sh
